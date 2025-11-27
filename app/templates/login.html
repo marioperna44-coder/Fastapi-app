@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OZS Login</title>
+    <style>
+        body {
+            background-color: #222;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-container {
+            background-color: #2f2f2f;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 350px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #76c043; /* Firmen-Grün */
+        }
+
+        input {
+            width: 100%;
+            padding: 0.6rem;
+            margin: 0.5rem 0;
+            border-radius: 6px;
+            border: none;
+            background-color: #3a3a3a;
+            color: white;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.6rem;
+            background-color: #76c043;
+            border: none;
+            color: black;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+
+        button:hover {
+            background-color: #8bd851;
+        }
+
+        .error {
+            color: #ff5555;
+            text-align: center;
+        }
+
+        #change-password {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>OZS Login</h2>
+
+    <!-- LOGIN FORMULAR -->
+    <form id="login-form">
+        <input type="text" id="username" placeholder="Benutzername" required>
+        <input type="password" id="password" placeholder="Passwort" required>
+        <button type="submit">Anmelden</button>
+        <p class="error" id="login-error"></p>
+    </form>
+
+    <!-- PASSWORT ÄNDERN FORMULAR -->
+    <form id="change-password">
+        <input type="password" id="oldpw" placeholder="Altes Passwort" required>
+        <input type="password" id="newpw" placeholder="Neues Passwort" required>
+        <input type="password" id="newpw2" placeholder="Neues Passwort wiederholen" required>
+        <button type="submit">Passwort ändern</button>
+        <p class="error" id="change-error"></p>
+    </form>
+</div>
+
+<script>
+    const loginForm = document.getElementById("login-form");
+    const changeForm = document.getElementById("change-password");
+
+    const loginError = document.getElementById("login-error");
+    const changeError = document.getElementById("change-error");
+
+    let currentUsername = null;
+
+    // ============================
+    // LOGIN HANDLER
+    // ============================
+    loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        loginError.textContent = "";
+
+        const formData = new FormData();
+        formData.append("username", document.getElementById("username").value);
+        formData.append("password", document.getElementById("password").value);
+
+        const response = await fetch("/api/login", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.password_change_required) {
+            // Benutzer muss Passwort ändern
+            currentUsername = data.username;
+            loginForm.style.display = "none";
+            changeForm.style.display = "block";
+        } else if (data.access_token) {
+            // Login erfolgreich
+            localStorage.setItem("token", data.access_token);
+            localStorage.setItem("username", data.user.username);
+            
+            window.location.href = "/";
+        } else {
+            loginError.textContent = data.detail || "Login fehlgeschlagen";
+        }
+    });
+
+    // ============================
+    // PASSWORT ÄNDERN HANDLER
+    // ============================
+    changeForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        changeError.textContent = "";
+
+        const payload = {
+            username: currentUsername,
+            old_password: document.getElementById("oldpw").value,
+            new_password: document.getElementById("newpw").value,
+            new_password_repeat: document.getElementById("newpw2").value
+        };
+
+        const response = await fetch("/api/change_password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (data.message) {
+            alert("✅ Passwort erfolgreich geändert. Du wirst jetzt eingeloggt.");
+            window.location.href = "/";
+        } else {
+            changeError.textContent = data.detail || "Fehler beim Passwortwechsel";
+        }
+    });
+</script>
+
+</body>
+</html>

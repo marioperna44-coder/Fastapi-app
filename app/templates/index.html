@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OZS Pulververwaltung</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1>OZS Pulververwaltung</h1>
+    <div class="user-actions">
+      <span id="username">Angemeldet als: Admin</span>
+      <button id="logout-btn" class="btn btn-secondary">Logout</button>
+    </div>
+  </header>
+
+  <!-- Hauptlayout -->
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <ul>
+        <li><a href="#" class="sidebar-link active" data-page="startseite">🏠 Startseite</a></li>
+        <li><a href="#" class="sidebar-link" data-page="pulverlager">📦 Pulverlager</a></li>
+        <li><a href="#" class="sidebar-link" data-page="auftragsdisplay">📋 Auftragsdisplay</a></li>
+        <li class="sidebar-section">⚙️ Administration</li>
+        <li><a href="#" class="sidebar-link" data-page="benutzer">👤 Benutzerverwaltung</a></li>
+        <li><a href="#" class="sidebar-link" data-page="rollenrechte">🔑 Rollen & Rechte</a></li>
+      </ul>
+    </aside>
+
+    <!-- Content -->
+    <main id="content" class="content-area">
+      <!-- Wird dynamisch geladen -->
+    </main>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

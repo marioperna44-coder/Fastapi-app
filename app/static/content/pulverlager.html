@@ -1,0 +1,255 @@
+<div class="pulverlager">
+  <h2>📦 Pulverlager</h2>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button id="btn-new-pulver" class="btn btn-primary">➕ Pulver hinzufügen</button>
+    <button id="btn-tracking" class="btn btn-secondary">📊 Tracking</button>
+  </div>
+  <!-- Filterleiste (immer sichtbar) -->
+  <div class="filter-row sticky-filter">
+    <label class="filter-label">🔍 Filter:</label>
+
+    <select id="filter-column" class="form-control filter-select">
+      <option value="">Alle Spalten</option>
+      <option value="barcode">Barcode</option>
+      <option value="artikelnummer">Artikelnummer</option>
+      <option value="hersteller">Hersteller</option>
+      <option value="farbe">Farbe</option>
+      <option value="qualitaet">Qualität</option>
+      <option value="oberflaeche">Oberfläche</option>
+      <option value="anwendung">Anwendung</option>
+    </select>
+
+    <input type="text" id="filter-query" class="form-control filter-input" placeholder="Suchbegriff eingeben">
+    <button id="filter-reset" class="btn btn-secondary filter-reset-btn">❌</button>
+  </div>
+
+  <!-- Scrollbarer Bereich -->
+  <div class="table-container">
+    <table id="pulver-table" class="table table-striped table-hover">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Barcode</th>
+          <th>Artikelnummer</th>
+          <th>Hersteller</th>
+          <th>Farbe</th>
+          <th>Qualität</th>
+          <th>Oberfläche</th>
+          <th>Anwendung</th>
+          <th>Gebindegröße (kg)</th>
+          <th>Restmenge (kg)</th>
+          <th>Lagerort</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Inhalte werden per JS geladen -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ========================== -->
+<!-- Modal: Neues Pulver -->
+<!-- ========================== -->
+<div id="newPulverModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>➕ Neues Pulver hinzufügen</h3>
+
+    <form id="newPulverForm">
+      <div class="form-group">
+        <label for="artikelnummer">Artikelnummer *</label>
+        <input
+          type="text"
+          id="artikelnummer"
+          name="artikelnummer"
+          class="form-control"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="hersteller">Hersteller *</label>
+        <input
+          type="text"
+          id="hersteller"
+          name="hersteller"
+          class="form-control"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="farbe">Farbe</label>
+        <input type="text" id="farbe" name="farbe" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label for="qualitaet">Qualität</label>
+        <input type="text" id="qualitaet" name="qualitaet" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label for="oberflaeche">Oberfläche</label>
+        <input type="text" id="oberflaeche" name="oberflaeche" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label for="anwendung">Anwendung</label>
+        <input type="text" id="anwendung" name="anwendung" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label for="start_menge_kg">Gebindegröße (kg)</label>
+        <input
+          type="number"
+          id="start_menge_kg"
+          name="start_menge_kg"
+          class="form-control"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="lagerort">Lagerort</label>
+        <input type="text" id="lagerort" name="lagerort" class="form-control" />
+      </div>
+
+      <!-- Buttons -->
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-primary">💾 Speichern</button>
+        <button type="button" id="cancelNewPulverModal" class="btn btn-secondary">Abbrechen</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== -->
+<!-- Modal: Pulver-Tracking -->
+<!-- ===================== -->
+<div id="trackingModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>📦 Pulverbewegung erfassen</h3>
+
+    <form id="trackingForm">
+      <!-- Barcode -->
+      <div class="form-group">
+        <label for="track-barcode">Barcode *</label>
+        <input
+          type="text"
+          id="track-barcode"
+          name="barcode"
+          class="form-control"
+          placeholder="Barcode eingeben oder scannen"
+          required
+        />
+      </div>
+
+      <!-- Alte Menge -->
+      <div class="form-group">
+        <label for="track-menge-alt">Menge alt (kg)</label>
+        <input type="number" id="track-menge-alt" name="menge_alt" class="form-control" readonly />
+      </div>
+
+      <!-- Neue Menge -->
+      <div class="form-group">
+        <label for="track-menge-neu">Menge (neu) *</label>
+        <input
+          type="number"
+          id="track-menge-neu"
+          name="menge_neu"
+          class="form-control"
+          placeholder="Neue Menge eingeben"
+          required
+        />
+      </div>
+
+      <!-- Beschreibung -->
+      <div class="form-group">
+        <label for="track-beschreibung">Beschreibung</label>
+        <input
+          type="text"
+          id="track-beschreibung"
+          name="beschreibung"
+          class="form-control"
+          value="Normaler Verbrauch"
+        />
+      </div>
+
+      <!-- Buttons -->
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-primary">💾 Speichern</button>
+        <button type="button" id="cancelTrackingModal" class="btn btn-secondary">Abbrechen</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ========================== -->
+<!-- Modal: Pulver bearbeiten -->
+<!-- ========================== -->
+<div id="editPulverModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>✏️ Pulver bearbeiten</h3>
+
+    <form id="editPulverForm">
+      
+      <div class="form-group">
+        <label for="edit-artikelnummer">Artikelnummer *</label>
+        <input type="text" id="edit-artikelnummer" name="artikelnummer" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-hersteller">Hersteller *</label>
+        <input type="text" id="edit-hersteller" name="hersteller" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-farbe">Farbe</label>
+        <input type="text" id="edit-farbe" name="farbe" class="form-control">
+      </div>
+
+      <div class="form-group">
+        <label for="edit-qualitaet">Qualität</label>
+        <input type="text" id="edit-qualitaet" name="qualitaet" class="form-control">
+      </div>
+
+      <div class="form-group">
+        <label for="edit-oberflaeche">Oberfläche</label>
+        <input type="text" id="edit-oberflaeche" name="oberflaeche" class="form-control">
+      </div>
+
+      <div class="form-group">
+        <label for="edit-anwendung">Anwendung</label>
+        <input type="text" id="edit-anwendung" name="anwendung" class="form-control">
+      </div>
+
+      <div class="form-group">
+        <label for="edit-start_menge_kg">Gebindegröße (kg)</label>
+        <input type="number" id="edit-start_menge_kg" name="start_menge_kg" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-lagerort">Lagerort</label>
+        <input type="text" id="edit-lagerort" name="lagerort" class="form-control">
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="edit-aktiv" name="aktiv">
+          Aktiv
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-primary">💾 Speichern</button>
+        <button type="button" id="deletePulverBtn" class="btn btn-danger">🗑️ Löschen</button>
+        <button type="button" id="cancelEditPulverModal" class="btn btn-secondary">Abbrechen</button>
+      </div>
+    </form>
+  </div>
+</div>
+

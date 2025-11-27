@@ -1,0 +1,37 @@
+<div class="roles-container">
+    <h2>🔑 Rollen & Berechtigungen</h2>
+
+    <div class="roles-info-box">
+        <p>
+            In diesem Bereich kannst du Rollen verwalten und festlegen, welche Berechtigungen
+            jeder Rolle zugeordnet werden. Änderungen wirken sich unmittelbar auf alle Benutzer aus,
+            die dieser Rolle zugewiesen sind.
+        </p>
+    </div>
+
+    <div class="roles-layout">
+        <!-- Rollenliste -->
+        <div class="roles-list">
+            <div class="roles-header">
+                <h3>Rollen</h3>
+                <button id="btn-add-role" class="btn btn-primary btn-sm">Neue Rolle</button>
+            </div>
+
+            <ul id="roles-list"></ul>
+        </div>
+
+        <!-- Rechteanzeige -->
+        <div class="permissions-panel">
+            <h3 id="role-title">Rechte</h3>
+            <p id="role-description" class="role-desc"></p>
+
+            <div id="permissions-list" class="permissions-grid"></div>
+
+            <button id="btn-save-permissions" class="btn btn-primary hidden">
+                💾 Änderungen speichern
+            </button>
+        </div>
+    </div>
+</div>
+
+

@@ -1,0 +1,410 @@
+/* === Farbdefinitionen === */
+:root {
+  --anthrazit: #2e2e2e;
+  --gruen-dunkel: #1f7a4c;
+  --gruen-mittel: #38a76d;
+  --gruen-hell: #7bcf9c;
+  --text-weiss: #ffffff;
+  --grau-hell: #3d3d3d;
+}
+
+/* === Grundlayout === */
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background-color: var(--anthrazit);
+  color: var(--text-weiss);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === Header === */
+.header {
+  background-color: var(--gruen-dunkel);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+}
+
+.header h1 {
+  font-size: 1.4rem;
+  letter-spacing: 0.5px;
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* === Buttons === */
+.btn {
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-weiss);
+  transition: background-color 0.2s ease;
+}
+
+.btn-secondary {
+  background-color: var(--gruen-mittel);
+}
+
+.btn-secondary:hover {
+  background-color: var(--gruen-hell);
+  color: var(--anthrazit);
+}
+
+.btn-primary {
+  background-color: var(--gruen-dunkel);
+}
+
+.btn-primary:hover {
+  background-color: var(--gruen-mittel);
+  color: var(--anthrazit);
+}
+
+/* Gefährliche Aktion / z. B. Löschen */
+.btn-danger {
+  background-color: #a4161a; /* Rot für deutliche Warnung */
+  color: var(--text-weiss);
+}
+
+.btn-danger:hover {
+  background-color: #ba181b;
+  color: var(--anthrazit);
+}
+
+/* Kleine Buttons – z. B. in Tabellen */
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 3px;
+}
+
+/* Deaktivierte Buttons */
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+/* === Layout Hauptbereich === */
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* === Sidebar === */
+.sidebar {
+  width: 230px;
+  background-color: var(--grau-hell);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: inset -1px 0 4px rgba(0,0,0,0.4);
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar a {
+  display: block;
+  padding: 10px 12px;
+  color: var(--text-weiss);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background-color 0.25s ease, padding-left 0.2s ease;
+}
+
+.sidebar a:hover {
+  background-color: var(--gruen-mittel);
+  padding-left: 16px;
+}
+
+.sidebar a.active {
+  background-color: var(--gruen-dunkel);
+  font-weight: 600;
+}
+
+.sidebar-section {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #555;
+  color: var(--gruen-hell);
+  font-size: 0.9rem;
+}
+
+/* === Contentbereich === */
+.content-area {
+  flex-grow: 1;
+  background-color: #222;
+  padding: 25px;
+  overflow-y: auto;
+}
+
+.content-area h2 {
+  color: var(--gruen-hell);
+}
+
+.content-area p {
+  color: #ccc;
+}
+
+/* === Scrollbar etwas schöner machen === */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--gruen-mittel);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #1a1a1a;
+}
+/* === Tabellen === */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  background-color: var(--anthrazit);
+  color: var(--text-weiss);
+  border: 1px solid var(--grau-hell);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--grau-hell);
+  text-align: left;
+}
+
+.table th {
+  background-color: var(--gruen-dunkel);
+  color: var(--text-weiss);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table-striped tbody tr:nth-child(even) {
+  background-color: var(--grau-hell);
+}
+
+.table-hover tbody tr:hover {
+  background-color: var(--gruen-mittel);
+  color: var(--anthrazit);
+  cursor: pointer;
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  background-color: var(--gruen-dunkel);
+  z-index: 10;
+}
+/* === Modals === */
+.modal.hidden {
+  display: none;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: var(--anthrazit);
+  color: var(--text-weiss);
+  padding: 20px;
+  border-radius: 10px;
+  width: 400px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--gruen-dunkel);
+}
+
+/* === Formularfelder === */
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: var(--text-weiss);
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--grau-hell);
+  background-color: #3a3a3a;
+  color: var(--text-weiss);
+  font-size: 14px;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--gruen-mittel);
+  box-shadow: 0 0 4px var(--gruen-hell);
+}
+
+/* === Modal-Aktionen === */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* === Filterleiste === */
+.filter-row {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-label {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.filter-select,
+.filter-input {
+  padding: 6px 10px;
+  background-color: var(--anthrazit);
+  color: var(--text-weiss);
+  border: 1px solid var(--grau-hell);
+  border-radius: 4px;
+}
+
+/* Reset-Button */
+.filter-reset-btn {
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+/* === Filterleiste sticky === */
+.sticky-filter {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: var(--anthrazit);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--grau-hell);
+}
+
+/* === Scrollbarer Tabellencontainer === */
+.table-container {
+  max-height: 60vh;       /* sichtbare Höhe */
+  overflow-y: auto;
+  margin-top: 8px;
+  border: 1px solid var(--grau-hell);
+  border-radius: 6px;
+}
+
+/* Sticky Table Header */
+.table-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--gruen-dunkel);
+}
+.roles-layout {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 20px;
+}
+
+.roles-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.role-item {
+    padding: 8px;
+    border: 1px solid #ddd;
+    margin-bottom: 6px;
+    cursor: pointer;
+    border-radius: 4px;
+    background: #fafafa;
+}
+
+.role-item:hover {
+    background: #f0f0f0;
+}
+
+.permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+}
+
+.permission-item {
+    padding: 8px;
+    border: 1px solid #dedede;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.role-desc {
+    color: #666;
+    margin-top: -10px;
+    margin-bottom: 10px;
+}
+
+.roles-info-box {
+    background: #2d2d2d;
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border-left: 4px solid #4caf50;
+    color: #ddd;
+    max-width: 1000px;
+}
+
+.roles-info-box p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.permissions-grid .permission-item {
+    color: #222;               /* Text dunkel */
+}
+
+.permissions-grid .permission-item strong {
+    color: #000;               /* Titel noch dunkler */
+}
+
+.permissions-grid .permission-item small {
+    color: #555;               /* Beschreibung grau */
+}
+.role-item {
+    color: #000 !important;       /* schwarzer Text */
+}
+
+.role-item span {
+    color: #000 !important;       /* sicherheitshalber explizit */
+}
