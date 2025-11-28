@@ -14,9 +14,14 @@ const PAGE_SCRIPTS = {
 
 function initGlobalWebSocket() {
     console.log("🔌 Verbinde globalen WebSocket...");
-
-    globalWS = new WebSocket(`ws://${location.host}/ws/app`);
-
+    
+    // *** WICHTIGE KORREKTUR FÜR RENDER (WSS/WS) ***
+    const protocol = location.protocol === "https:" ? "wss" : "ws";
+    
+    // Verbinde unter Verwendung des korrekten Protokolls (wss:// auf Render)
+    globalWS = new WebSocket(`${protocol}://${location.host}/ws/app`);
+    
+    // ... der Rest Ihrer Funktion bleibt unverändert ...
     globalWS.onopen = () => {
         console.log("✅ Globaler WebSocket verbunden!");
     };
@@ -24,12 +29,9 @@ function initGlobalWebSocket() {
     globalWS.onmessage = (event) => {
         try {
             const msg = JSON.parse(event.data);
-
-            // 🔥 Globales DOM-Event, damit alle Module darauf reagieren können
             document.dispatchEvent(
                 new CustomEvent("ws-event", { detail: msg })
             );
-
         } catch (e) {
             console.error("❌ Fehler beim Lesen der WS-Nachricht:", e);
         }
