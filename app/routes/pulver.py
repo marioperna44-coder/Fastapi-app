@@ -57,7 +57,6 @@ async def create_pulver(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    username = current_user.username
 
     artikelnummer = data.get("artikelnummer")
     hersteller = data.get("hersteller")
@@ -88,7 +87,7 @@ async def create_pulver(
         lagerort=data.get("lagerort"),
         aktiv=True,
         deleted=False,
-        created_by=username,
+        created_by=current_user.id,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )
