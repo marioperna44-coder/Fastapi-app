@@ -7,6 +7,7 @@ from app.routes import auth, users, roles, pulver
 from fastapi import WebSocket
 from .ws_manager import manager
 from fastapi import WebSocketDisconnect
+from app.seed_permissions import run_seed
 
 # *** WICHTIGE KORREKTUR: PATHLIB FÜR ROBUSTE PFADE ***
 from pathlib import Path
@@ -16,6 +17,8 @@ BASE_DIR = Path(__file__).resolve().parent
 
 # Datenbank-Tabellen erstellen
 Base.metadata.create_all(bind=engine)
+
+run_seed()
 
 app = FastAPI()
 
