@@ -1,0 +1,125 @@
+<div class="user-management">
+  <h2>👤 Benutzerverwaltung</h2>
+
+  <div class="toolbar">
+    <button id="btn-new-user" class="btn btn-primary">➕ Neuer Benutzer</button>
+    <button id="btn-refresh-users" class="btn btn-secondary">🔄 Aktualisieren</button>
+  </div>
+
+  <table id="users-table" class="table table-striped table-hover">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Benutzername</th>
+        <th>E-Mail</th>
+        <th>Rolle</th>
+        <th>Aktiv</th>
+        <th>Letzter Login</th>
+        <th>Aktionen</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- ===================== -->
+<!-- Modal: Neuer Benutzer -->
+<!-- ===================== -->
+<div id="newUserModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>➕ Neuer Benutzer</h3>
+
+    <form id="newUserForm">
+      <!-- Benutzername -->
+      <div class="form-group">
+        <label for="username">Benutzername *</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          class="form-control"
+          required
+        />
+      </div>
+
+      <!-- E-Mail -->
+      <div class="form-group">
+        <label for="email">E-Mail *</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          class="form-control"
+          required
+        />
+      </div>
+
+      <!-- Rolle -->
+      <div class="form-group">
+        <label for="role_id">Rolle (ID)</label>
+        <input
+          type="number"
+          id="role_id"
+          name="role_id"
+          class="form-control"
+          placeholder="z. B. 1 für Admin"
+        />
+      </div>
+
+      <!-- Aktiv -->
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="active" name="active" checked />
+          Aktiv
+        </label>
+      </div>
+
+      <!-- Buttons -->
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-primary">💾 Speichern</button>
+        <button
+          type="button"
+          id="cancelNewUserModal"
+          class="btn btn-secondary"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="editUserModal" class="modal hidden">
+  <div class="modal-content">
+    <h3 id="editModalTitle">✏️ Benutzer bearbeiten</h3>
+
+    <form id="editUserForm">
+      <div class="form-group">
+        <label for="edit-username">Benutzername</label>
+        <input type="text" id="edit-username" name="username" class="form-control" required />
+      </div>
+
+      <div class="form-group">
+        <label for="edit-email">E-Mail</label>
+        <input type="email" id="edit-email" name="email" class="form-control" required />
+      </div>
+
+      <div class="form-group">
+        <label for="edit-role_id">Rolle</label>
+        <input type="number" id="edit-role_id" name="role_id" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="edit-active" name="active" /> Aktiv
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-primary">💾 Speichern</button>
+        <button type="button" id="resetPasswordBtn" class="btn btn-secondary">🔑 Passwort zurücksetzen</button>
+        <button type="button" id="cancelEditModal" class="btn btn-danger">Abbrechen</button>
+      </div>
+    </form>
+  </div>
+</div>

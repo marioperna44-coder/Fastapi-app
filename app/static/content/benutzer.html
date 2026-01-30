@@ -1,25 +1,113 @@
+<style>
+  /* Spezifisches Layout für diese View */
+  .user-toolbar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px;
+    background-color: var(--grau-hell);
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #444;
+  }
+
+  .toolbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-icon {
+    width: 36px; 
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+  }
+
+  /* Hilfsklasse für gelöschte Zeilen */
+  .deleted-user {
+    background-color: rgba(164, 22, 26, 0.2) !important;
+    color: #ffcccc;
+  }
+  
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  /* ========================================= */
+  /* FIX: Fehlende Klassen für Buttons ergänzen */
+  /* ========================================= */
+  
+  /* Wiederherstellen-Button (Grün, passend zum Theme) */
+  .btn-success {
+    background-color: #28a745; 
+    color: var(--text-weiss) !important; /* Erzwingt weiße Schrift */
+  }
+  .btn-success:hover {
+    background-color: #218838;
+  }
+
+  /* Umschalt-Button aktiver Zustand (Blau zur Unterscheidung oder Theme-Grün) */
+  .btn-info {
+    background-color: #17a2b8;
+    color: var(--text-weiss) !important;
+  }
+  .btn-info:hover {
+    background-color: #138496;
+  }
+</style>
+
 <div class="user-management">
   <h2>👤 Benutzerverwaltung</h2>
 
-  <div class="toolbar">
-    <button id="btn-new-user" class="btn btn-primary">➕ Neuer Benutzer</button>
-    <button id="btn-refresh-users" class="btn btn-secondary">🔄 Aktualisieren</button>
+  <!-- Toolbar Container -->
+  <div class="user-toolbar">
+    
+    <!-- Linke Gruppe -->
+    <button id="btn-new-user" class="btn btn-primary">
+      ➕ Neuer Benutzer
+    </button>
+    <button id="btn-refresh-users" class="btn btn-secondary">
+      🔄 Aktualisieren
+    </button>
+
+    <!-- Rechte Gruppe -->
+    <div class="toolbar-right">
+        <!-- Umschalt-Button -->
+        <button id="btn-toggle-deleted" class="btn btn-secondary">
+          👀 Vollständige Ansicht
+        </button>
+
+        <!-- Export Button -->
+        <button id="btn-export-users" class="btn btn-primary btn-icon" title="Liste exportieren">
+          📄
+        </button>
+    </div>
   </div>
 
-  <table id="users-table" class="table table-striped table-hover">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Benutzername</th>
-        <th>E-Mail</th>
-        <th>Rolle</th>
-        <th>Aktiv</th>
-        <th>Letzter Login</th>
-        <th>Aktionen</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <!-- Tabelle -->
+  <div class="table-container">
+      <table id="users-table" class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Benutzername</th>
+            <th>E-Mail</th>
+            <th>Rolle</th>
+            <th>Aktiv</th>
+            <th>Letzter Login</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+            <!-- Wird per JS gefüllt -->
+        </tbody>
+      </table>
+  </div>
 </div>
 
 <!-- ===================== -->
@@ -30,43 +118,21 @@
     <h3>➕ Neuer Benutzer</h3>
 
     <form id="newUserForm">
-      <!-- Benutzername -->
       <div class="form-group">
         <label for="username">Benutzername *</label>
-        <input
-          type="text"
-          id="username"
-          name="username"
-          class="form-control"
-          required
-        />
+        <input type="text" id="username" name="username" class="form-control" required />
       </div>
 
-      <!-- E-Mail -->
       <div class="form-group">
         <label for="email">E-Mail *</label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          class="form-control"
-          required
-        />
+        <input type="email" id="email" name="email" class="form-control" required />
       </div>
 
-      <!-- Rolle -->
       <div class="form-group">
         <label for="role_id">Rolle (ID)</label>
-        <input
-          type="number"
-          id="role_id"
-          name="role_id"
-          class="form-control"
-          placeholder="z. B. 1 für Admin"
-        />
+        <input type="number" id="role_id" name="role_id" class="form-control" placeholder="z. B. 1 für Admin" />
       </div>
 
-      <!-- Aktiv -->
       <div class="form-group">
         <label>
           <input type="checkbox" id="active" name="active" checked />
@@ -74,21 +140,17 @@
         </label>
       </div>
 
-      <!-- Buttons -->
       <div class="modal-actions">
         <button type="submit" class="btn btn-primary">💾 Speichern</button>
-        <button
-          type="button"
-          id="cancelNewUserModal"
-          class="btn btn-secondary"
-        >
-          Abbrechen
-        </button>
+        <button type="button" id="cancelNewUserModal" class="btn btn-secondary">Abbrechen</button>
       </div>
     </form>
   </div>
 </div>
 
+<!-- ========================== -->
+<!-- Modal: Benutzer bearbeiten -->
+<!-- ========================== -->
 <div id="editUserModal" class="modal hidden">
   <div class="modal-content">
     <h3 id="editModalTitle">✏️ Benutzer bearbeiten</h3>
@@ -117,7 +179,7 @@
 
       <div class="modal-actions">
         <button type="submit" class="btn btn-primary">💾 Speichern</button>
-        <button type="button" id="resetPasswordBtn" class="btn btn-secondary">🔑 Passwort zurücksetzen</button>
+        <button type="button" id="resetPasswordBtn" class="btn btn-secondary">🔑 PW-Reset</button>
         <button type="button" id="cancelEditModal" class="btn btn-danger">Abbrechen</button>
       </div>
     </form>

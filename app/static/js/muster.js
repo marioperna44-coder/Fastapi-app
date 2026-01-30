@@ -1,225 +1,305 @@
-/* console.log("📌 rollenrechte.js geladen");
+/* console.log("🟦 user-management.js geladen", performance.now());
+let userWSInitialized = false;
 
-function initRolesPage() {
-    console.log("🚀 Rollen & Rechte Modul gestartet");
+// ==========================================================
+//  USER MANAGEMENT – MODUL INITIALISIEREN
+// ==========================================================
 
-    loadRoles();
-    loadPermissions();
+function initUserManagement() {
+    console.log("🚀 User-Management Modul aktiviert");
 
     const root = document.getElementById("content");
-    root.addEventListener("click", onClick);
-    root.addEventListener("submit", onSubmit);
-}
-
-window.initRolesPage = initRolesPage;
-
-// ============================================================
-// 🔹 Globale Daten
-// ============================================================
-
-let ALL_PERMISSIONS = [];
-let ALL_ROLES = [];
-let CURRENT_ROLE = null;
-
-// ============================================================
-// 📌 Rollen laden
-// ============================================================
-
-async function loadRoles() {
-    try {
-        const res = await apiFetch("/api/roles/roles");
-        ALL_ROLES = await res.json();
-
-        const list = document.getElementById("roles-list");
-        list.innerHTML = "";
-
-        ALL_ROLES.forEach(role => {
-            const li = document.createElement("li");
-            li.classList.add("role-item");
-            li.dataset.id = role.id;
-
-            li.innerHTML = `
-                <span>${role.name}</span>
-            `;
-
-            list.appendChild(li);
-        });
-
-    } catch (err) {
-        console.error("❌ Fehler beim Laden der Rollen:", err);
-    }
-}
-
-// ============================================================
-// 📌 Alle Permissions laden
-// ============================================================
-
-async function loadPermissions() {
-    try {
-        const res = await apiFetch("/api/roles/permissions");
-        ALL_PERMISSIONS = await res.json();
-    } catch (err) {
-        console.error("❌ Fehler beim Laden der Permissions:", err);
-    }
-}
-
-// ============================================================
-// 🔄 Rolle anklicken → Rechte anzeigen
-// ============================================================
-
-async function onClick(e) {
-    if (e.target.closest(".role-item")) {
-        const id = e.target.closest(".role-item").dataset.id;
-        selectRole(Number(id));
+    if (!root) {
+        console.error("❌ #content nicht gefunden!");
         return;
     }
 
-    // Neue Rolle
-    if (e.target.matches("#btn-add-role")) {
-        openNewRoleModal();
+    // Events NUR in diesem Bereich
+    root.addEventListener("click", onUserClick);
+    root.addEventListener("submit", onUserSubmit);
+
+    // 🔥 WebSocket Listener nur EINMAL registrieren!
+    if (!userWSInitialized) {
+        document.addEventListener("ws-event", onUserWebSocketEvent);
+        userWSInitialized = true;
+    }
+
+    // Start: Benutzerliste laden
+    loadUsers();
+}
+
+window.initUserManagement = initUserManagement;
+
+
+function refreshUserManagement() {
+    console.log("🔄 UserManagement Refresh");
+
+    // Tabelle neu laden
+    loadUsers();
+
+    // Modals schließen (falls aus vorheriger Ansicht noch offen)
+    const newModal = document.getElementById("newUserModal");
+    if (newModal) newModal.classList.add("hidden");
+
+    const editModal = document.getElementById("editUserModal");
+    if (editModal) editModal.classList.add("hidden");
+}
+
+window.refreshUserManagement = refreshUserManagement;
+
+// ==========================================================
+//  API: Benutzer laden
+// ==========================================================
+
+async function loadUsers() {
+    try {
+        const res = await apiFetch("/api/users/");
+        const users = await res.json();
+
+        const tbody = document.querySelector("#users-table tbody");
+        tbody.innerHTML = "";
+
+        users.forEach(u => {
+            const tr = document.createElement("tr");
+            tr.dataset.userid = u.id;
+            tr.innerHTML = `
+                <td>${u.id}</td>
+                <td>${u.username}</td>
+                <td>${u.email}</td>
+                <td>${u.role_name || "-"}</td>
+                <td>${u.active ? "Ja" : "Nein"}</td>
+                <td>${formatDate(u.last_login)}</td>
+                <td>
+                    <button class="btn-edit-user btn btn-secondary btn-sm">Bearbeiten</button>
+                    <button class="btn-delete-user btn btn-danger btn-sm">Löschen</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error("❌ Fehler beim Laden:", err);
     }
 }
 
-// ============================================================
-// 📌 Rolle auswählen
-// ============================================================
+function formatDate(dateString) {
+    if (!dateString) return "-";
+    const d = new Date(dateString);
+    return d.toLocaleString("de-DE");
+}
 
-async function selectRole(roleId) {
-    CURRENT_ROLE = ALL_ROLES.find(r => r.id === roleId);
 
-    if (!CURRENT_ROLE) return;
+// ==========================================================
+//  CLICK EVENTS
+// ==========================================================
 
-    // UI setzen
-    document.getElementById("role-title").textContent = `Rechte: ${CURRENT_ROLE.name}`;
-    document.getElementById("role-description").textContent =
-        CURRENT_ROLE.description || "";
+async function onUserClick(e) {
 
-    document.getElementById("btn-save-permissions").classList.remove("hidden");
+    // ➕ Neuer Benutzer
+    if (e.target.matches("#btn-new-user")) {
+        e.preventDefault();
+
+        // 🔐 Permission prüfen
+        if (!(await userHasPermission("user.create"))) {
+            alert("❌ Sie haben keine Berechtigung, einen neuen Benutzer anzulegen.");
+            return;
+        }
+
+        document.getElementById("newUserModal").classList.remove("hidden");
+        return;
+    }
+
+    // ❌ Modal schließen
+    if (e.target.matches("#cancelNewUserModal")) {
+        e.preventDefault();
+        document.getElementById("newUserModal").classList.add("hidden");
+        return;
+    }
+
+    // ✏️ Benutzer bearbeiten
+    if (e.target.matches(".btn-edit-user")) {
+
+        if (!(await userHasPermission("user.update"))) {
+            alert("❌ Sie haben keine Berechtigung, Benutzer zu bearbeiten.");
+            return;
+        }
+
+        const tr = e.target.closest("tr");
+        const userId = tr.dataset.userid;
+
+        // 🔄 FRISCHE Daten aus der API holen (wichtig für updated_at!)
+        const res = await apiFetch(`/api/users/${userId}`);
+        const user = await res.json();
+
+        // Felder befüllen
+        document.getElementById("edit-username").value = user.username;
+        document.getElementById("edit-email").value = user.email;
+        document.getElementById("edit-role_id").value = user.role_id;
+        document.getElementById("edit-active").checked = user.active;
+
+        // 🔥 OPTIMISTIC LOCKING: updated_at speichern
+        const form = document.getElementById("editUserForm");
+        form.dataset.userid = userId;
+        form.dataset.updated_at = user.updated_at;
+
+        document.getElementById("editUserModal").classList.remove("hidden");
+        return;
+    }
+
+    // ❌ Edit Modal schließen
+    if (e.target.matches("#cancelEditModal")) {
+        document.getElementById("editUserModal").classList.add("hidden");
+        return;
+    }
+
+    // 🗑️ Benutzer löschen
+    if (e.target.matches(".btn-delete-user")) {
+
+        // 🔐 Permission prüfen
+        if (!(await userHasPermission("user.delete"))) {
+            alert("❌ Sie haben keine Berechtigung, Benutzer zu löschen.");
+            return;
+        }
+
+        const tr = e.target.closest("tr");
+        const userId = tr.dataset.userid;
+
+        if (!confirm("⚠️ Benutzer wirklich löschen?")) return;
+
+        try {
+            const res = await apiFetch(`/api/users/${userId}`, {
+                method: "DELETE",
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.detail || "Fehler");
+
+            alert("Benutzer gelöscht.");
+            loadUsers();
+
+        } catch (err) {
+            alert("Fehler:\n" + err.message);
+        }
+        return;
+    }
+}
+
+
+// ==========================================================
+//  SUBMIT EVENTS (Formulare)
+// ==========================================================
+
+async function onUserSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+
+    // ➕ Neuen Benutzer anlegen
+    if (form.id === "newUserForm") {
+        return handleNewUser(form);
+    }
+
+    // ✏️ Benutzer bearbeiten
+    if (form.id === "editUserForm") {
+        return handleEditUser(form);
+    }
+}
+
+
+// ==========================================================
+//  HANDLER – Benutzer erstellen
+// ==========================================================
+
+async function handleNewUser(form) {
+    const payload = {
+        username: form.username.value.trim(),
+        email: form.email.value.trim(),
+        role_id: parseInt(form.role_id.value),
+        active: form.active.checked
+    };
 
     try {
-        const res = await apiFetch(`/api/roles/roles/${roleId}/permissions`);
+        const res = await apiFetch("/api/users/", {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
         const data = await res.json();
 
-        renderPermissionCheckboxes(data.permissions);
+        if (!res.ok) throw new Error(data.detail || "Fehler");
 
-    } catch (err) {
-        console.error("❌ Fehler beim Laden der Rollenrechte:", err);
-    }
-}
-
-// ============================================================
-// 📌 Permission-Checkboxen anzeigen
-// ============================================================
-
-function renderPermissionCheckboxes(assignedIds) {
-    const container = document.getElementById("permissions-list");
-    container.innerHTML = "";
-
-    ALL_PERMISSIONS.forEach(perm => {
-        const box = document.createElement("div");
-        box.classList.add("permission-item");
-
-        box.innerHTML = `
-            <label>
-                <input type="checkbox" 
-                    class="perm-check"
-                    data-id="${perm.id}"
-                    ${assignedIds.includes(perm.id) ? "checked" : ""} />
-                <strong>${perm.name}</strong>
-                <small>${perm.description || ""}</small>
-            </label>
-        `;
-
-        container.appendChild(box);
-    });
-}
-
-// ============================================================
-// 💾 Rechte speichern
-// ============================================================
-
-async function savePermissions() {
-    
-    if (!CURRENT_ROLE) return;
-
-    const ids = [...document.querySelectorAll(".perm-check:checked")]
-        .map(c => Number(c.dataset.id));
-
-    try {
-        const res = await apiFetch("/api/roles/assign_permissions", {
-            method: "POST",
-            body: JSON.stringify({
-                role_id: CURRENT_ROLE.id,
-                permission_ids: ids
-            })
-        });
-
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.detail);
-
-        alert("Rechte erfolgreich gespeichert!");
-
-    } catch (err) {
-        alert("Fehler beim Speichern:\n" + err.message);
-    }
-}
-
-// ============================================================
-// ✏ Neue Rolle erstellen
-// ============================================================
-
-async function openNewRoleModal() {
-
-    if (!(await userHasPermission("new.role"))) {
-        alert("❌ Sie haben keine Berechtigung, eine neue Rolle anzulegen.");
-        return;
-    }
-
-    const name = prompt("Name der neuen Rolle:");
-    if (!name) return;
-
-    const description = prompt("Beschreibung (optional):") || "";
-
-    createRole(name, description);
-}
-
-async function createRole(name, description) {
-    try {
-        const res = await apiFetch("/api/roles/", {
-            method: "POST",
-            body: JSON.stringify({ name, description })
-        });
-
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.detail);
-
-        alert("Rolle erstellt!");
-        loadRoles();
+        alert(`Benutzer angelegt. Passwort:\n${data.temp_password}`);
+        document.getElementById("newUserModal").classList.add("hidden");
+        loadUsers();
 
     } catch (err) {
         alert("Fehler:\n" + err.message);
     }
 }
 
-// ============================================================
-// 📌 Event Listener für Speichern
-// ============================================================
 
-async function onSubmit(e) {
-    if (e.target.matches("#save-permissions-form")) {
+// ==========================================================
+//  HANDLER – Benutzer bearbeiten
+// ==========================================================
 
-        if (!(await userHasPermission("manage.permission"))) {
-            alert("❌ Sie haben keine Berechtigung, Rollenrechte zu speichern.");
+async function handleEditUser(form) {
+    const userId = form.dataset.userid;
+
+    const payload = {
+        username: form["edit-username"].value.trim(),
+        email: form["edit-email"].value.trim(),
+        role_id: parseInt(form["edit-role_id"].value),
+        active: form["edit-active"].checked,
+        
+        updated_at: form.dataset.updated_at
+    };
+
+    try {
+        const res = await apiFetch(`/api/users/${userId}`, {
+            method: "PUT",
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (res.status === 409) {
+            alert("⚠️ Dieser Benutzer wurde inzwischen von einem anderen Benutzer geändert.\nBitte Seite aktualisieren.");
             return;
         }
 
-        savePermissions();
+        if (!res.ok) throw new Error(data.detail || "Fehler");
+
+        alert("Benutzer gespeichert.");
+        document.getElementById("editUserModal").classList.add("hidden");
+        loadUsers();
+
+    } catch (err) {
+        alert("Fehler:\n" + err.message);
     }
+
 }
 
-document.addEventListener("click", e => {
-    if (e.target.matches("#btn-save-permissions")) {
-        savePermissions();
+// ==========================================================
+//  WEBSOCKET Events Live Update
+// ==========================================================
+
+function onUserWebSocketEvent(e) {
+    const msg = e.detail;
+
+    if (msg.event === "user_created") {
+        console.log("👤 WS: user_created → reload");
+        loadUsers();
+        return;
     }
-});
+
+    if (msg.event === "user_updated") {
+        console.log("✏️ WS: user_updated → reload");
+        loadUsers();
+        return;
+    }
+
+    if (msg.event === "user_deleted") {
+        console.log("❌ WS: user_deleted → reload");
+        loadUsers();
+        return;
+    }
+}
 */

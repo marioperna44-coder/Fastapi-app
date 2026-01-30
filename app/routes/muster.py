@@ -1,18 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Body, Query
-from fastapi.responses import Response
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
 import secrets, string
 from app.auth import get_current_user, require_permission
 from app.database import get_db
 from app.models import User
-from app.auth import hash_password 
+from app.auth import hash_password   # bereits vorhanden aus deiner auth.py
 from ..ws_manager import manager
 import asyncio
-from fastapi.responses import StreamingResponse
-from openpyxl import Workbook
-from io import BytesIO
-from app.models import User, Role
+
 
 router = APIRouter(
     prefix="/api/users",
@@ -22,23 +18,17 @@ router = APIRouter(
 
 
 # ------------------------------------------------------------
-# 🔹 1. Alle Benutzer anzeigen (mit optionaler Ansicht für Gelöschte)
+# 🔹 1. Alle Benutzer anzeigen (ohne Passwort)
 # ------------------------------------------------------------
 @router.get("/", dependencies=[Depends(require_permission("user.manage"))])
-def get_all_users(
-    db: Session = Depends(get_db),
-    # NEU: Query-Parameter, um gelöschte Benutzer einzuschließen
-    show_deleted: bool = Query(False, description="Wenn True, werden auch gelöschte Benutzer (deleted=True) angezeigt.")
-):
-    """Gibt alle Benutzer (oder alle, inkl. gelöschter) mit Rollenname zurück"""
-    
-    query = db.query(User).options(joinedload(User.role))
-    
-    # NEU: Filterung basierend auf dem Parameter
-    if not show_deleted:
-        query = query.filter(User.deleted == False)
-
-    users = query.all()
+def get_all_users(db: Session = Depends(get_db)):
+    """Gibt alle Benutzer mit Rollenname zurück"""
+    users = (
+    db.query(User)
+    .options(joinedload(User.role))
+    .filter(User.deleted == False)
+    .all()
+    )
 
     result = []
     for u in users:
@@ -49,10 +39,10 @@ def get_all_users(
             "role_id": u.role_id,
             "role_name": u.role.name if u.role else None,
             "active": u.active,
-            "deleted": u.deleted, # WICHTIG: deleted muss immer mitgegeben werden
+            "deleted": u.deleted,
             "must_change_password": u.must_change_password,
-            "last_login": u.last_login.isoformat() if u.last_login else None,
-            "created_at": u.created_at.isoformat() if u.created_at else None,
+            "last_login": u.last_login,
+            "created_at": u.created_at
         })
     return result
 
@@ -111,74 +101,15 @@ async def create_user(data: dict = Body(...), db: Session = Depends(get_db)):
         "temp_password": temp_pw,
     }
 
-# ------------------------------------------------------------
-# 🔹 3. Benutzerliste exportieren (ROBUSTES CSV mit UTF-8 BOM)
-# ------------------------------------------------------------
-@router.get("/export", dependencies=[Depends(require_permission("user.manage"))])
-def export_users(db: Session = Depends(get_db)):
-    today = datetime.now().strftime("%Y-%m-%d")
-
-    filename = f"users_{today}.xlsx"
-    
-
-    # --- 1) Benutzer mit Rolle laden ---
-    users = (
-        db.query(User)
-        .join(Role, User.role_id == Role.id, isouter=True)
-        .all()
-    )
-
-    # --- 2) Excel-Datei erstellen ---
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Users"
-
-    # Kopfzeile
-    headers = ["ID", "Benutzername", "Email", "Rolle", "Aktiv", "Erstellt am", "Gelöscht"]
-    ws.append(headers)
-
-    # --- 3) Jede Zeile ein User ---
-    for u in users:
-        ws.append([
-            u.id,
-            u.username,
-            u.email,
-            u.role.name if u.role else "—",
-            "Ja" if u.active else "Nein",
-            u.created_at.strftime("%d.%m.%Y %H:%M") if u.created_at else "",
-            "Ja" if u.deleted else "Nein",
-        ])
-
-    # Optional: Spaltenbreiten automatisch anpassen
-    for column_cells in ws.columns:
-        length = max(len(str(cell.value)) for cell in column_cells)
-        ws.column_dimensions[column_cells[0].column_letter].width = length + 2
-
-    # --- 4) Datei in Bytes speichern ---
-    stream = BytesIO()
-    wb.save(stream)
-    stream.seek(0)
-
-    # --- 5) Response zurückgeben ---
-    return StreamingResponse(
-        stream,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"'
-        }
-    )
-
-
 
 # ------------------------------------------------------------
-# 🔹 4 Benutzer bearbeiten
+# 🔹 3. Benutzer bearbeiten (ohne Passwort)
 # ------------------------------------------------------------
 @router.put("/{user_id}", dependencies=[Depends(require_permission("user.update"))])
-async def update_user(user_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
-    # Wir erlauben keine Bearbeitung von gelöschten Benutzern über diesen Endpunkt
+async def update_user(user_id: int, data: dict, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id, User.deleted == False).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Benutzer nicht gefunden (oder gelöscht)")
+        raise HTTPException(status_code=404, detail="Benutzer nicht gefunden")
 
     # ✅ ADMIN darf nicht bearbeitet werden
     if user.role and user.role.name.lower() == "admin":
@@ -193,8 +124,6 @@ async def update_user(user_id: int, data: dict = Body(...), db: Session = Depend
         user.role_id = data["role_id"]
     if "active" in data:
         user.active = data["active"]
-    
-    # Hier müsste die Optimistic Locking Logik stehen
 
     db.commit()
 
@@ -209,37 +138,9 @@ async def update_user(user_id: int, data: dict = Body(...), db: Session = Depend
     return {"message": "Benutzerdaten aktualisiert"}
 
 
-# ------------------------------------------------------------
-# 🔹 4.1. Benutzer wiederherstellen (NEUE ROUTE)
-# ------------------------------------------------------------
-@router.put("/restore/{user_id}", dependencies=[Depends(require_permission("user.update"))])
-async def restore_user(user_id: int, db: Session = Depends(get_db)):
-    """Stellt einen zuvor gelöschten Benutzer wieder her (setzt deleted=False)."""
-    # Benutzer suchen, auch wenn er deleted=True ist
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Benutzer nicht gefunden")
-    
-    if not user.deleted:
-        return {"message": "Benutzer ist bereits aktiv."}
-
-    user.deleted = False
-    # Optional: user.active = True setzen, falls Wiederherstellung immer Aktivierung bedeutet
-    db.commit()
-
-    asyncio.create_task(manager.broadcast({
-        "event": "user_updated", # Löst ein Frontend-Reload aus
-        "id": user.id,
-        "username": user.username,
-        "role_id": user.role_id,
-        "active": user.active
-    }))
-
-    return {"message": f"Benutzer {user.username} erfolgreich wiederhergestellt"}
-
 
 # ------------------------------------------------------------
-# 🔹 5. Passwort zurücksetzen (neues Einmalpasswort)
+# 🔹 4. Passwort zurücksetzen (neues Einmalpasswort)
 # ------------------------------------------------------------
 @router.post("/{user_id}/reset_password", dependencies=[Depends(require_permission("user.update"))])
 def reset_password(user_id: int, db: Session = Depends(get_db)):
@@ -260,7 +161,7 @@ def reset_password(user_id: int, db: Session = Depends(get_db)):
 
 
 # ------------------------------------------------------------
-# 🔹 6. Benutzer löschen (Soft Delete)
+# 🔹 5. Benutzer löschen (Soft Delete)
 # ------------------------------------------------------------
 @router.delete("/{user_id}", dependencies=[Depends(require_permission("user.delete"))])
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
@@ -271,9 +172,6 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
     # ✅ ADMIN darf NICHT gelöscht werden
     if user.role and user.role.name.lower() == "admin":
         raise HTTPException(status_code=403, detail="Admin kann nicht gelöscht werden")
-        
-    if user.deleted:
-        raise HTTPException(status_code=400, detail="Benutzer ist bereits gelöscht")
 
     user.deleted = True
     db.commit()
@@ -286,13 +184,12 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {"message": "Benutzer gelöscht"}
 
 # ------------------------------------------------------------
-# 🔹 7. Daten einer User ID
+# 🔹 6. Daten einer User ID
 # ------------------------------------------------------------
 
 @router.get("/{user_id}", dependencies=[Depends(require_permission("user.update"))])
 def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
-    # Sucht Benutzer, unabhängig vom deleted Status (wichtig für das Bearbeiten-Modal)
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == user_id, User.deleted == False).first()
 
     if not user:
         raise HTTPException(status_code=404, detail="Benutzer nicht gefunden")
@@ -303,12 +200,10 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
         "email": user.email,
         "role_id": user.role_id,
         "active": user.active,
-        "deleted": user.deleted, # WICHTIG: deleted hier hinzufügen
-        "last_login": user.last_login.isoformat() if user.last_login else None,
-        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "last_login": user.last_login,
+        "created_at": user.created_at,
         "updated_at": user.updated_at.isoformat() if user.updated_at else None,
     }
-
 
 # ------------------------------------------------------------
 # 🔸 Hilfsfunktion: Einmalpasswort generieren
