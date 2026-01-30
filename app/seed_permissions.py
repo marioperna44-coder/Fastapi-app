@@ -24,6 +24,8 @@ PERMISSIONS = [
     ("powder.update", "Pulver bearbeiten"),
     ("powder.label", "Pulverlabel drucken"),
     ("pulver.track", "Pulverbewegung erfassen"),
+    ("pulver.delete", "Pulver löschen"),
+    
 
     # Auftragsdisplay
     ("auftraege.manage", "Auftragsdisplay öffnen"),

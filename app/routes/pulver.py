@@ -26,7 +26,7 @@ router = APIRouter(
 # ------------------------------------------------------------
 @router.get("/", dependencies=[Depends(get_current_user)])
 def get_all_pulver(db: Session = Depends(get_db)):
-    pulver = db.query(Pulver).filter(Pulver.deleted == False).all()
+    pulver = db.query(Pulver).filter(Pulver.deleted == False,Pulver.aktiv == True).all()
 
     result = []
     for p in pulver:
@@ -202,6 +202,12 @@ async def track_pulver(
     pulver = db.query(Pulver).filter(Pulver.barcode == barcode, Pulver.deleted == False).first()
     if not pulver:
         raise HTTPException(status_code=404, detail="Pulver nicht gefunden")
+    
+    if menge_neu < 0:
+        raise HTTPException(status_code=404, detail="Pulverbestand darf nicht negativ sein")
+    
+    if menge_neu == 0:
+        pulver.aktiv = False
 
     menge_alt = pulver.menge_kg
 
