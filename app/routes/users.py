@@ -60,7 +60,11 @@ def get_all_users(
 # 🔹 2. Neuen Benutzer anlegen
 # ------------------------------------------------------------
 @router.post("/", dependencies=[Depends(require_permission("user.create"))])
-async def create_user(data: dict = Body(...), db: Session = Depends(get_db)):
+async def create_user(
+    data: dict = Body(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     username = data.get("username")
     email = data.get("email")
     role_id = data.get("role_id")
@@ -72,6 +76,15 @@ async def create_user(data: dict = Body(...), db: Session = Depends(get_db)):
     # Prüfen ob Benutzername schon existiert
     if db.query(User).filter(User.username == username).first():
         raise HTTPException(status_code=400, detail="Benutzername existiert bereits")
+
+    # 🔐 Rolle sicher laden & prüfen
+    role = db.query(Role).filter(Role.id == role_id).first()
+    if not role:
+        raise HTTPException(status_code=400, detail="Ungültige Rolle")
+    
+    from app.auth import assert_can_assign_role
+    assert_can_assign_role(role, current_user)
+
 
     # Einmalpasswort generieren
     temp_pw = generate_temp_password()
@@ -174,23 +187,43 @@ def export_users(db: Session = Depends(get_db)):
 # 🔹 4 Benutzer bearbeiten
 # ------------------------------------------------------------
 @router.put("/{user_id}", dependencies=[Depends(require_permission("user.update"))])
-async def update_user(user_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
+async def update_user(
+    user_id: int,
+    data: dict = Body(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     # Wir erlauben keine Bearbeitung von gelöschten Benutzern über diesen Endpunkt
     user = db.query(User).filter(User.id == user_id, User.deleted == False).first()
     if not user:
         raise HTTPException(status_code=404, detail="Benutzer nicht gefunden (oder gelöscht)")
 
-    # ✅ ADMIN darf nicht bearbeitet werden
-    if user.role and user.role.name.lower() == "admin":
-        raise HTTPException(status_code=403, detail="Admin kann nicht bearbeitet werden")
+    if "role_id" in data:
+
+        # 🚫 Admin darf sich NICHT selbst downgraden
+        if user.id == current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Du kannst deine eigene Rolle nicht ändern"
+            )
+
+        # Rolle laden
+        role = db.query(Role).filter(Role.id == data["role_id"]).first()
+        if not role:
+            raise HTTPException(status_code=400, detail="Ungültige Rolle")
+
+        # 🔐 Admin-Rolle nur durch Admin vergebbar
+        from app.auth import assert_can_assign_role
+        assert_can_assign_role(role, current_user)
+
+        # Rolle setzen
+        user.role_id = role.id
 
     # Felder aktualisieren (aber kein Passwort)
     if "username" in data:
         user.username = data["username"]
     if "email" in data:
         user.email = data["email"]
-    if "role_id" in data:
-        user.role_id = data["role_id"]
     if "active" in data:
         user.active = data["active"]
     

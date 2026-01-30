@@ -50,6 +50,36 @@ function refreshUserManagement() {
 
 window.refreshUserManagement = refreshUserManagement;
 
+
+// ==========================================================
+//  Hilfsfunktion
+// ==========================================================
+async function loadRolesIntoEditSelect(selectedRoleId) {
+    console.log("🔥 loadRolesIntoEditSelect CALLED");
+    const res = await apiFetch("/api/roles/roles");
+    if (!res || !res.ok) {
+        console.error("Rollen konnten nicht geladen werden");
+        return;
+    }
+
+    const roles = await res.json();
+    const select = document.getElementById("edit-role_id");
+
+    select.innerHTML = "";
+
+    roles.forEach(role => {
+        const option = document.createElement("option");
+        option.value = role.id;
+        option.textContent = role.name;
+
+        if (role.id === selectedRoleId) {
+            option.selected = true;
+        }
+
+        select.appendChild(option);
+    });
+}
+
 // ==========================================================
 //  API: Benutzer laden
 // ==========================================================
@@ -258,7 +288,7 @@ async function onUserClick(e) {
         // Felder befüllen
         document.getElementById("edit-username").value = user.username;
         document.getElementById("edit-email").value = user.email;
-        document.getElementById("edit-role_id").value = user.role_id;
+        
         document.getElementById("edit-active").checked = user.active;
 
         // OPTIMISTIC LOCKING: updated_at speichern
@@ -267,6 +297,7 @@ async function onUserClick(e) {
         form.dataset.updated_at = user.updated_at;
 
         document.getElementById("editUserModal").classList.remove("hidden");
+        loadRolesIntoEditSelect(user.role_id);
         return;
     }
 

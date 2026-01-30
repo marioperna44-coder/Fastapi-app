@@ -186,6 +186,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const ok = await checkSessionValid();
     if (!ok) return; // login redirect wurde bereits ausgelöst
 
+    try {
+        const user = await loadCurrentUser();
+        const el = document.getElementById("username");
+        console.log("👤 CURRENT USER:", user);
+        if (el) {
+            el.textContent = `Angemeldet als: ${user.username ?? "?"}`;
+        }
+    } catch (e) {
+        console.warn("⚠️ Benutzer konnte nicht geladen werden");
+    }
     
     setupLogoutButton();
     setupSidebarNavigation();
@@ -196,19 +206,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 /* ============================================================
    🧪 LOGIN STATUS PRÜFEN
 ============================================================ */
-
-function checkLogin() {
-    const token = getToken();
-    if (!token) {
-        window.location.href = "/login";
-        return;
-    }
-
-    const username = localStorage.getItem("username");
-    if (username && document.getElementById("username")) {
-        document.getElementById("username").textContent = `Angemeldet als: ${username}`;
-    }
-}
 
 async function checkSessionValid() {
     const token = getToken();

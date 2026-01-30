@@ -5,14 +5,14 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import User, RolePermission, Permission
+from app.models import User, RolePermission, Permission, Role
 from jose.exceptions import ExpiredSignatureError
 
 # Geheimschlüssel für JWT
 SECRET_KEY = "mein-geheimer-schluessel"  # später aus .env laden!
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 # 8 Stunden gültig
-
+ADMIN_ROLE_NAME = "admin"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
 
@@ -96,3 +96,11 @@ def require_permission(permission_name: str):
         return current_user
 
     return dependency
+
+def assert_can_assign_role(target_role: Role, current_user: User):
+    if target_role.name.lower() == ADMIN_ROLE_NAME:
+        if not current_user.role or current_user.role.name.lower() != ADMIN_ROLE_NAME:
+            raise HTTPException(
+                status_code=403,
+                detail="Nur Admins dürfen Admin-Rollen vergeben"
+            )

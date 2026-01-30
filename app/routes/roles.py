@@ -79,7 +79,8 @@ async def create_role(
 @router.post("/assign_permissions", dependencies=[Depends(require_permission("manage.permission"))])
 async def assign_permissions(
     data: dict = Body(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
 ):
     """
     Setzt die Berechtigungen einer Rolle mit Optimistic Locking.
@@ -127,7 +128,28 @@ async def assign_permissions(
     )
 
     if len(valid_ids) != len(permission_ids):
-        raise HTTPException(status_code=400, detail="Eine oder mehrere permission_ids sind ungültig")
+        raise HTTPException(
+            status_code=400,
+            detail="Eine oder mehrere permission_ids sind ungültig"
+        )
+
+    # ----------------------------------
+    # 🔐 Machtbegrenzung (NEU!)
+    # ----------------------------------
+    current_permissions = set(
+        p[0] for p in
+        db.query(Permission.id)
+        .join(RolePermission, Permission.id == RolePermission.permission_id)
+        .filter(RolePermission.role_id == current_user.role_id)
+    )
+
+    for pid in valid_ids:
+        if pid not in current_permissions:
+            raise HTTPException(
+                status_code=403,
+                detail="Du kannst keine Berechtigungen vergeben, die du selbst nicht hast"
+            )
+
 
     # Alte Rechte löschen
     db.query(RolePermission).filter(RolePermission.role_id == role_id).delete()
@@ -156,7 +178,7 @@ async def assign_permissions(
 # ------------------------------------------------------------
 # 🔹 Permission anlegen
 # ------------------------------------------------------------
-@router.post("/permissions/")
+@router.post("/permissions/", dependencies=[Depends(require_permission("manage.permission"))])
 def create_permission(
     data: dict = Body(...),
     db: Session = Depends(get_db),
