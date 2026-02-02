@@ -3,6 +3,7 @@
 // ==========================================================
 
 let pulverWSInitialized = false;
+let showInactivePowders = false;
 
 // ==========================================================
 //  MODULE INITIALISIERUNG
@@ -59,7 +60,11 @@ window.refreshPulverlager = refreshPulverlager;
 
 async function loadPowders() {
     try {
-        const res = await apiFetch("/api/pulver/");
+        const url = showInactivePowders
+            ? "/api/pulver/?show_inactive=true"
+            : "/api/pulver/";
+
+        const res = await apiFetch(url);
         const powders = await res.json();
 
         const tbody = document.querySelector("#pulver-table tbody");
@@ -68,6 +73,10 @@ async function loadPowders() {
         powders.forEach(p => {
             const tr = document.createElement("tr");
             tr.dataset.id = p.id;
+
+            if (!p.aktiv) {
+                tr.classList.add("row-inactive");
+            }
 
             tr.innerHTML = `
                 <td>${p.id}</td>
@@ -100,6 +109,19 @@ async function loadPowders() {
 // ==========================================================
 
 async function onPulverClick(e) {
+
+    // 📋 Alle / nur aktive Pulver anzeigen (Toggle)
+    if (e.target.matches("#btn-show-all")) {
+        console.log("🔄 Alles anzeigen");
+        showInactivePowders = !showInactivePowders;
+
+        e.target.textContent = showInactivePowders
+            ? "🔍 Nur aktive anzeigen"
+            : "📋 Alle anzeigen";
+
+        loadPowders().then(() => setupFilter());
+        return;
+    }
 
     // ➕ Neues Pulver
     if (e.target.matches("#btn-new-pulver")) {

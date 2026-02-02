@@ -408,3 +408,8 @@ body {
 .role-item span {
     color: #000 !important;       /* sicherheitshalber explizit */
 }
+
+.row-inactive {
+    opacity: 0.5;
+    font-style: italic;
+}

@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from ..ws_manager import manager
 import asyncio
+from fastapi import Query
 
 templates = Jinja2Templates(directory="app/templates")
 
@@ -25,8 +26,17 @@ router = APIRouter(
 # 🔹 1. Alle Pulver abrufen  (geschützt)
 # ------------------------------------------------------------
 @router.get("/", dependencies=[Depends(get_current_user)])
-def get_all_pulver(db: Session = Depends(get_db)):
-    pulver = db.query(Pulver).filter(Pulver.deleted == False,Pulver.aktiv == True).all()
+def get_all_pulver(
+    show_inactive: bool = Query(False),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Pulver).filter(Pulver.deleted == False)
+
+    # Standardansicht: nur aktive Pulver
+    if not show_inactive:
+        query = query.filter(Pulver.aktiv == True)
+
+    pulver = query.all()
 
     result = []
     for p in pulver:
